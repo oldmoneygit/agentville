@@ -21,14 +21,14 @@ never opens the office pays nothing for it.
 Each decision below was taken during brainstorming and is settled. Re-opening one is a
 spec change, not an implementation detail.
 
-| # | Decision | Rationale |
-|---|---|---|
-| D1 | **Open floor, no rooms.** Every session and subagent is a character on one shared floor; the project is a badge/colour, not a wall. | Chosen over per-project rooms for liveliness and simpler layout. |
-| D2 | **Editor-tab webview; tree view preserved.** A command opens the office in an editor tab. | An open floor needs width a 300px sidebar cannot give. Preserving the tree means zero regression and zero cost when the office is closed. |
-| D3 | **Side panel shows a live sliding window of the last ~20 entries**, not the full transcript. | Matches the existing incremental parser, bounds memory, and answers the real question ("what is it doing now"). Full history is already served by *Open Log File*. |
-| D4 | **Sprites come from a permissively-licensed (CC0) pack.** | The repository is public under Apache-2.0; assets must be redistributable. See §8 for the selection gate. |
-| D5 | **Phaser 3 renders; simulation logic lives outside Phaser.** | Phaser is the most mature 2D engine and makes sub-projects 2–3 much cheaper. Keeping simulation in pure TypeScript preserves the project's convention that logic is unit-testable without a DOM. |
-| D6 | **Full game layer is the destination**, delivered across three sub-projects. | Explicit product choice. This spec covers only sub-project 1. |
+| #   | Decision                                                                                                                            | Rationale                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D1  | **Open floor, no rooms.** Every session and subagent is a character on one shared floor; the project is a badge/colour, not a wall. | Chosen over per-project rooms for liveliness and simpler layout.                                                                                                                                 |
+| D2  | **Editor-tab webview; tree view preserved.** A command opens the office in an editor tab.                                           | An open floor needs width a 300px sidebar cannot give. Preserving the tree means zero regression and zero cost when the office is closed.                                                        |
+| D3  | **Side panel shows a live sliding window of the last ~20 entries**, not the full transcript.                                        | Matches the existing incremental parser, bounds memory, and answers the real question ("what is it doing now"). Full history is already served by _Open Log File_.                               |
+| D4  | **Sprites come from a permissively-licensed (CC0) pack.**                                                                           | The repository is public under Apache-2.0; assets must be redistributable. See §8 for the selection gate.                                                                                        |
+| D5  | **Phaser 3 renders; simulation logic lives outside Phaser.**                                                                        | Phaser is the most mature 2D engine and makes sub-projects 2–3 much cheaper. Keeping simulation in pure TypeScript preserves the project's convention that logic is unit-testable without a DOM. |
+| D6  | **Full game layer is the destination**, delivered across three sub-projects.                                                        | Explicit product choice. This spec covers only sub-project 1.                                                                                                                                    |
 
 ## 3. Scope
 
@@ -40,12 +40,17 @@ spec change, not an implementation detail.
 - Parsing subagent transcripts (`<session-id>/subagents/agent-<id>.jsonl`), which the
   extension does not read today.
 - Open-floor map, characters entering and leaving, idle wandering, depth sorting.
+- **A furnished, zoned office map** — desks, chairs, meeting area, coffee corner, plants,
+  rugs, partitions — as static scenery.
+- **Name tags** under every character.
 - Speech bubbles (DOM), click to open a side panel with the live feed.
-- Selecting and integrating the CC0 asset pack.
+- Selecting and integrating the asset packs (§8).
 
 **Out of scope (later sub-projects)**
 
-- Furniture-driven movement, per-tool destinations, coffee-machine idling → sub-project 2.
+- Furniture as _destination_ — walking to the shelf when reading, the printer when running
+  a command, the coffee machine when idle → sub-project 2. The furniture itself ships here
+  as scenery; only the behaviour that targets it is deferred.
 - XP, levels, achievements, ranking, day/night, unlockable decoration, any persisted
   state in `globalState` → sub-project 3.
 - Camera panning/zoom, scrollable maps larger than one screen.
@@ -111,16 +116,16 @@ logs, not only fixtures.
 
 Derived from the last `tool_use` block of the agent's most recent assistant message.
 
-| Tool | Rendered action |
-|---|---|
-| `Read` | `Reading <basename>` |
-| `Edit`, `Write`, `NotebookEdit` | `Editing <basename>` |
-| `Bash` | `Running <first 30 chars of command>` |
-| `Grep`, `Glob` | `Searching for <pattern>` |
-| `Agent`, `Task` | `Delegating to <subagent_type>` |
-| `WebSearch`, `WebFetch` | `Researching` |
-| `TodoWrite` | `Planning` |
-| anything else | `Working` |
+| Tool                            | Rendered action                       |
+| ------------------------------- | ------------------------------------- |
+| `Read`                          | `Reading <basename>`                  |
+| `Edit`, `Write`, `NotebookEdit` | `Editing <basename>`                  |
+| `Bash`                          | `Running <first 30 chars of command>` |
+| `Grep`, `Glob`                  | `Searching for <pattern>`             |
+| `Agent`, `Task`                 | `Delegating to <subagent_type>`       |
+| `WebSearch`, `WebFetch`         | `Researching`                         |
+| `TodoWrite`                     | `Planning`                            |
+| anything else                   | `Working`                             |
 
 Rules:
 
@@ -165,19 +170,19 @@ type ToWebview =
 interface AgentView {
   id: string;
   kind: 'session' | 'subagent';
-  parentId?: string;          // set for subagents
-  name: string;               // session title or subagent name
+  parentId?: string; // set for subagents
+  name: string; // session title or subagent name
   model?: string;
   projectName: string;
   brand: 'claude-code' | 'antigravity';
   status: 'working' | 'stopped';
-  action?: string;            // §5.1; absent when stopped
+  action?: string; // §5.1; absent when stopped
   lastActivityAt: number;
 }
 
 interface FeedEntry {
   role: 'assistant' | 'user';
-  text: string;               // truncated to 2000 chars
+  text: string; // truncated to 2000 chars
   tool?: string;
   at: number;
 }
@@ -205,6 +210,14 @@ into the webview that nobody is reading.
 
 - **Map:** fixed 40×24 tiles at 16px, rendered at integer scale to fit the panel. No camera
   panning, no zoom, no scrolling — the whole office is always on screen.
+- **The map is furnished and zoned**, not an empty room. It is authored once as static data
+  (a tile grid plus a list of placed objects) and rendered as a real tilemap — desks with
+  chairs, a meeting table, a coffee corner, plants, rugs and partitions marking zones. This
+  is what makes the space read as an office rather than a floor with people on it; the
+  reference experience is Gather, and in Gather nearly all of that feeling comes from the
+  furnished map. Furniture is scenery only in this sub-project — nothing walks to it yet.
+- **Walkability:** furniture tiles are non-walkable. Wander targets are chosen from the
+  walkable set, so characters never stand inside a desk.
 - **Character identity:** the sprite variant is chosen by a stable hash of the agent name,
   so the same `debugger` is always the same person across refreshes. Sessions and subagents
   use visually distinct sprite sets. Brand is a colour variation.
@@ -215,27 +228,50 @@ into the webview that nobody is reading.
   legs. Movement carries no meaning yet — that is sub-project 2, and the simulation API is
   shaped so a target-selection strategy can be swapped in without touching the renderer.
 - **Depth sorting:** by Y coordinate, so characters correctly overlap.
-- **Bubbles:** DOM elements anchored to each sprite's screen position, updated every frame
-  via `transform`. Text is the action string truncated to 40 characters. Bubbles render only
-  for `working` agents. Clicking one sends `openFeed`.
+- **Name tags:** a small DOM label under every character showing its name, always visible —
+  working or idle. Name tags and bubbles are separate: the tag says _who_, the bubble says
+  _what_. A character with no current action still has a tag.
+- **Bubbles:** DOM elements anchored above each sprite's screen position, updated every
+  frame via `transform`. Text is the action string truncated to 40 characters. Bubbles
+  render only for `working` agents. Clicking one sends `openFeed`.
 - **Capacity:** at most **24** characters are drawn. Beyond that, working agents win over
   idle ones, most-recent activity breaks ties, and the overflow is shown as a counter chip
   (`+7 waiting`). Silently dropping agents is not acceptable — the count must be visible.
 
 ## 8. Assets
 
-Sprites must be redistributable from a public Apache-2.0 repository, which rules out the
-common paid pixel-office packs.
+The reference experience is Gather, and that look depends on a good modern-interior tileset
+— precisely where permissive licensing is weakest. The good packs are commercial and forbid
+redistributing the asset files, which a public Apache-2.0 repository would do. Two tiers
+resolve this without blocking development.
 
-**Selection gate — first task of implementation, before any rendering work.** Identify a
-CC0 (or equivalently permissive) top-down pack providing: floor and wall tiles, basic office
-furniture, and at least two character sprite sets with 4-direction walk cycles. Record the
-pack, its licence, and its source URL in `resources/ASSETS.md`, and add the licence text to
-the repository.
+| Directory                   | Contents                | Git            | Role                                                                                                   |
+| --------------------------- | ----------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `resources/office/`         | CC0 / public-domain set | committed      | Baseline. Makes the public repo build and run for anyone who clones it.                                |
+| `resources/office-premium/` | commercial pack         | **gitignored** | Optional override. If present at build time, its files replace the baseline in the packaged extension. |
 
-If no such pack is found, stop and escalate rather than substituting a paid pack or
-generating sprites — the licence constraint is not negotiable, but the visual style is, and
-that trade is the user's to make.
+The renderer loads from a single logical asset root; the build copies `office-premium/` over
+`office/` when the directory exists. No code branches on which tier is active.
+
+**Licence status — unresolved, and must not be treated as resolved.** The candidate
+commercial pack (LimeZu _Modern Interiors_) permits "edit and use the asset in any
+commercial or non commercial project" and forbids "resell or distribute the asset to
+others", requiring credit with a link to the author. Bundling extractable PNGs inside a
+`.vsix` — a plain ZIP — sits in the grey area between those two clauses. Before any
+commercial pack ships in a release, written confirmation from the pack's author that
+bundling in a distributed VS Code extension is permitted must be obtained and recorded in
+`resources/ASSETS.md`. Until then the premium tier is a **local development override only**
+and releases ship the CC0 baseline.
+
+If a commercial pack is ever shipped, `NOTICE` and the README must carry the required
+credit and link.
+
+**Baseline selection gate — first task of implementation, before any rendering work.**
+Identify a CC0 (or equivalently permissive) top-down pack providing floor and wall tiles,
+office furniture, and at least two character sprite sets with 4-direction walk cycles.
+Record the pack, its licence and its source URL in `resources/ASSETS.md`, and add its
+licence text to the repository. If no such pack exists, stop and escalate — do not ship a
+commercial pack in its place.
 
 ## 9. Errors and performance
 
@@ -275,23 +311,25 @@ compared against what Claude Code was actually doing.
 
 ## 11. Risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                       | Mitigation                                                                                                               |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Transcript format drifts and actions become wrong or empty | Unknown shapes fall back to `Working`; the existing Claude-version compatibility warning already flags untested versions |
-| Reading subagent transcripts multiplies file I/O | Only `working` subagents are read, incrementally, byte-offset cached |
-| No suitable CC0 office pack exists | Explicit gate in §8 — escalate before building on a licence that cannot ship |
-| Phaser bundle inflates the `.vsix` | Expected ~1.2 MB; the release workflow's 2 MB guard still applies and must be re-checked when the webview bundle lands |
-| Simulation logic drifts into Phaser, losing testability | ESLint `boundaries` rule forbids Phaser imports under `webview/simulation/**` |
+| Reading subagent transcripts multiplies file I/O           | Only `working` subagents are read, incrementally, byte-offset cached                                                     |
+| No suitable CC0 office pack exists                         | Explicit gate in §8 — escalate before building on a licence that cannot ship                                             |
+| Phaser bundle inflates the `.vsix`                         | Expected ~1.2 MB; the release workflow's 2 MB guard still applies and must be re-checked when the webview bundle lands   |
+| Simulation logic drifts into Phaser, losing testability    | ESLint `boundaries` rule forbids Phaser imports under `webview/simulation/**`                                            |
 
 ## 12. Acceptance criteria
 
 1. A command opens the office in an editor tab; the tree view is unchanged and still works.
-2. Every working session and subagent appears as a character; characters enter on start and
-   leave on completion.
-3. Each working character carries a bubble showing a correct, human-readable current action.
-4. Clicking a bubble opens a side panel with that agent's last ~20 entries, updating live.
-5. With more than 24 agents, the overflow count is visible rather than silently dropped.
-6. Closing the panel or disabling monitoring stops all office work; CPU is idle when hidden.
-7. `npx tsc --noEmit`, `npm run lint` and `npm run test` are green.
-8. The extractor has been validated against real transcripts, including live subagents.
-9. `resources/ASSETS.md` records the asset pack, its licence and its source.
+2. The map reads as a furnished office — desks, chairs, meeting area, coffee corner, plants
+   — not an empty floor, and characters never stand inside furniture.
+3. Every working session and subagent appears as a character; characters enter on start and
+   leave on completion. Every character carries a name tag, working or idle.
+4. Each working character carries a bubble showing a correct, human-readable current action.
+5. Clicking a bubble opens a side panel with that agent's last ~20 entries, updating live.
+6. With more than 24 agents, the overflow count is visible rather than silently dropped.
+7. Closing the panel or disabling monitoring stops all office work; CPU is idle when hidden.
+8. `npx tsc --noEmit`, `npm run lint` and `npm run test` are green.
+9. The extractor has been validated against real transcripts, including live subagents.
+10. `resources/ASSETS.md` records the asset pack, its licence and its source.
