@@ -1,0 +1,87 @@
+name: Release → Open VSX
+
+# One click (or `gh workflow run release.yml -f bump=patch`) does everything:
+# verify → bump + tag → package → publish to Open VSX → push → GitHub Release.
+# Nothing is pushed to the repo until Open VSX accepts the .vsix, so a failed
+# publish leaves no dangling version commit or tag on the remote.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # v7 for both: the node24 action runtime landed in v5, so v4 was being force-migrated
+      # off its deprecated node20 runtime on every run. Neither v7 breaking change applies
+      # here — checkout's fork-PR guard only affects pull_request_target/workflow_run, and
+      # setup-node's dropped NODE_AUTH_TOKEN fallback only affects registry-url auth.
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify
+        run: |
+          npm run lint
+          npx tsc --noEmit
+          npm run test
+
+      - name: Bump version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version "$BUMP" -m "chore(release): v%s"
+          echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Package
+        run: npm run package:ci
+
+      # A stale .vscodeignore once produced a 77 MB bundle. Open VSX has no easy
+      # unpublish, so fail before shipping instead of after.
+      - name: Guard bundle size
+        run: |
+          size=$(stat -c%s agentville-*.vsix)
+          echo "vsix size: $size bytes"
+          test "$size" -lt 2000000 || { echo "::error::.vsix too large — check .vscodeignore"; exit 1; }
+
+      # The namespace has to exist before the first publish into it. Checking the public
+      # API first keeps this idempotent without swallowing a real create-namespace failure.
+      - name: Ensure Open VSX namespace exists
+        env:
+          OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
+        run: |
+          ns=$(node -p "require('./package.json').publisher")
+          if curl -sf "https://open-vsx.org/api/$ns" > /dev/null; then
+            echo "namespace $ns already exists"
+          else
+            echo "creating namespace $ns"
+            npx ovsx create-namespace "$ns"
+          fi
+
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
+        run: npm run publish:ovsx
+
+      - name: Push version commit + tag
+        run: git push --follow-tags
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "v$VERSION" agentville-*.vsix --generate-notes --title "v$VERSION"

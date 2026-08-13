@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "ES2022",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "sourceMap": true,
+    "strict": true,
+    // Pin automatic @types inclusion to just "node". Without this, TS auto-includes every
+    // package under node_modules/@types, and vitest 4's transitive @types/chai (which ships
+    // "type": "module") breaks NodeNext's automatic global inclusion for @types/node — fs/path/
+    // os/process/Buffer/etc. silently stop resolving project-wide. Verified this is unrelated
+    // to the @types/node version itself: reproduces identically on @types/node 18 and 24.
+    // @types/vscode is unaffected (resolved through the normal `import 'vscode'` module
+    // lookup, not this list).
+    "types": ["node"],
+    "outDir": "out",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
+}

@@ -1,0 +1,163 @@
+{
+  "name": "agentville",
+  "displayName": "AgentVille",
+  "description": "See every Claude Code and Antigravity agent running on your machine — sessions, subagents, models and live status, in one place.",
+  "version": "0.1.0",
+  "publisher": "soumatheusgomes",
+  "author": {
+    "name": "Matheus Gomes",
+    "email": "gomes7296@gmail.com"
+  },
+  "license": "Apache-2.0",
+  "icon": "resources/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soumatheusgomes/agentville.git"
+  },
+  "bugs": {
+    "url": "https://github.com/soumatheusgomes/agentville/issues"
+  },
+  "homepage": "https://github.com/soumatheusgomes/agentville#readme",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "claude",
+    "claude code",
+    "antigravity",
+    "agents",
+    "subagents",
+    "monitor"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentville-container",
+          "title": "AgentVille",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "views": {
+      "agentville-container": [
+        {
+          "id": "agentville.world",
+          "name": "Active Sessions & Subagents",
+          "type": "tree"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "agentville.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "agentville.openSessionLog",
+        "title": "Open Log File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "agentville.openProject",
+        "title": "Open Project Folder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "agentville.enable",
+        "title": "Enable Agent Monitoring",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "agentville.disable",
+        "title": "Disable Agent Monitoring",
+        "icon": "$(eye)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "agentville.disable",
+          "when": "view == agentville.world && config.agentville.enabled",
+          "group": "navigation@0"
+        },
+        {
+          "command": "agentville.enable",
+          "when": "view == agentville.world && !config.agentville.enabled",
+          "group": "navigation@0"
+        },
+        {
+          "command": "agentville.refresh",
+          "when": "view == agentville.world && config.agentville.enabled",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "agentville.openSessionLog",
+          "when": "view == agentville.world && viewItem == session",
+          "group": "inline"
+        },
+        {
+          "command": "agentville.openProject",
+          "when": "view == agentville.world && viewItem == session",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AgentVille",
+      "properties": {
+        "agentville.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "description": "Monitor Claude Code and Antigravity sessions. When disabled, the extension stops reading logs in every window/instance. Monitoring only resumes when you re-enable it (button at the top of the panel) or change this setting."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "node esbuild.js",
+    "watch-esbuild": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --minify",
+    "package": "rm -f *.vsix && npm version patch --no-git-tag-version && npx @vscode/vsce package --no-dependencies",
+    "package:ci": "rm -f *.vsix && npx @vscode/vsce package --no-dependencies",
+    "publish:ovsx": "npx ovsx publish *.vsix",
+    "lint": "eslint . && jscpd",
+    "lint:fix": "eslint . --fix",
+    "lint:duplication": "jscpd",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.3",
+    "@types/vscode": "^1.90.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.1.0",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "jscpd": "^5.0.14",
+    "prettier": "^3.2.5",
+    "typescript": "^5.0.4",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.10"
+  }
+}

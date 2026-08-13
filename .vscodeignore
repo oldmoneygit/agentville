@@ -1,0 +1,39 @@
+.vscode/**
+.agents/**
+# README screenshots — vsce rewrites relative image paths in readme.md to
+# https://github.com/<repo>/raw/HEAD/..., so the store loads them from GitHub and
+# the packed copy would never be read. Only resources/icon.png must ship.
+resources/screenshot*.png
+# Claude Code harness / dev tooling — must never ship in the extension bundle
+.claude/**
+vault-obsidian/**
+graphify-out/**
+.github/**
+docs/**
+scripts/**
+CLAUDE.md
+.mcp.json
+.mcp.json.example
+.lsp.json
+.worktreeinclude
+.graphifyignore
+*.vsix
+scratch/**
+coverage/**
+out/**
+src/**
+node_modules/**
+.git/**
+**/*.ts
+**/*.map
+**/*.log
+extension-debug.log
+esbuild.js
+tsconfig.json
+vitest.config.ts
+eslint.config.mjs
+.jscpd.json
+.prettierrc
+.gitignore
+package-lock.json
+**/.DS_Store

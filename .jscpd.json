@@ -1,0 +1,11 @@
+{
+  "path": ["src"],
+  "ignore": ["src/test/**"],
+  "format": ["typescript"],
+  "minLines": 8,
+  "minTokens": 60,
+  "threshold": 0,
+  "exitCode": 1,
+  "reporters": ["consoleFull"],
+  "absolute": true
+}

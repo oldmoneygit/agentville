@@ -1,0 +1,47 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}",
+        "Accept": "application/json, text/event-stream"
+      }
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "obsidian": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "--from",
+        "git+https://github.com/<your-org>/obsidian-mcp",
+        "obsidian-mcp"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "./vault-obsidian",
+        "OBSIDIAN_FOLDER_TEMPLATES": "[{\"folder\":\"01-projects\",\"template\":\"templates/project.md\"},{\"folder\":\"02-areas\",\"template\":\"templates/area.md\"},{\"folder\":\"03-knowledge\",\"template\":\"templates/knowledge.md\"},{\"folder\":\"04-resources\",\"template\":\"templates/resource.md\"},{\"folder\":\"daily\",\"template\":\"templates/daily.md\"}]",
+        "OBSIDIAN_SLUG_STYLE": "kebab",
+        "OBSIDIAN_TAG_STYLE": "kebab",
+        "OBSIDIAN_WIKILINK_POLICY": "strict",
+        "OBSIDIAN_DAILY_DIR": "daily",
+        "OBSIDIAN_REQUIRE_FRONTMATTER": "true",
+        "OBSIDIAN_SEARCH_RESULT_MODE": "auto"
+      }
+    }
+  }
+}

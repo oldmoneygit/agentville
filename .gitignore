@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build Outputs
+out/
+dist/
+
+# Test Coverage
+coverage/
+.vscode-test/
+*.vsix
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.log
+# aia-harness
+.claude/settings.local.json
+.claude/*.local.*
+.claude/pm-config.json
+graphify-out/
+graphify-out/cost.json
+graphify-out/cache/
+
+# aia-harness — obsidian vault: local, never committed.
+# A SessionEnd hook writes daily notes here automatically, so anything tracked
+# under this path would publish work context on every session. Ignored whole, no
+# exceptions — re-create the skeleton with /aia-harness:add-obsidian on a clone.
+vault-obsidian/
+
+# MCP config: kept local because server entries can point at private repos or
+# carry credentials. .mcp.json.example is the versioned, sanitised template.
+.mcp.json
+.claude/hooks/log/
+.claude/scripts/node_modules/
+.claude/scripts/package.json
+.claude/scripts/package-lock.json
+# aia-harness
+.claude/.aia-harness-pending/
+
+# Fixture pair written by src/test/lintRules.test.ts to prove import-x/no-cycle
+# still fires; removed in afterAll, ignored here so a crashed run cannot commit one.
+src/zzLintProbe*.ts

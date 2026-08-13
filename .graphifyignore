@@ -1,0 +1,59 @@
+# .graphifyignore — gitignore syntax; seeded from project .gitignore + graphify extraction filters.
+# Dependencies
+node_modules/
+
+# Build Outputs
+out/
+dist/
+
+# Test Coverage
+coverage/
+.vscode-test/
+*.vsix
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.log
+
+node_modules/
+dist/
+build/
+out/
+coverage/
+.next/
+.nuxt/
+.turbo/
+*.min.js
+*.generated.*
+
+# graphify extraction filters
+# Skip binary/media files from semantic extraction
+# (AST still processes code files normally)
+
+# Images — rendered separately, not needed for semantic
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+
+# PDFs — low signal-to-noise in semantic extraction
+*.pdf
+
+# Videos/audio — transcribed but usually verbose; filter at source if needed
+*.mp4
+*.mov
+*.mp3
+*.wav
+*.flac
+
+.claude/
+docs/
+.agents/
+.code-review-graph/
+.superpowers/
+
+*.md
