@@ -1,0 +1,85 @@
+name: CI
+
+# Every gate the release workflow runs before publishing, run on every change instead —
+# and run on all three platforms, because this project ships a file-path parser and its
+# only real bugs so far were platform-specific. A Linux-only CI passed a codebase where
+# `npm run lint` could not complete on Windows at all (6128 CRLF errors) and three tests
+# failed there, including one covering a real parsing defect.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same branch makes the previous run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not hide the result on the other two — the whole point
+      # here is telling "broken everywhere" apart from "broken on Windows".
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      # v7 for both, matching release.yml: the node24 action runtime landed in v5, so v4
+      # was being force-migrated off its deprecated node20 runtime on every run.
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run lint` is eslint + jscpd. Prettier runs inside eslint as prettier/prettier,
+      # so a CRLF checkout fails here — which is exactly the Windows regression to catch.
+      - run: npm run lint
+
+      - run: npx tsc -p ./ --noEmit
+
+      - run: npm run test
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    # Packaging is platform-independent, so it runs once — but only once every platform
+    # has verified, so a green .vsix can't be produced from a tree that fails on Windows.
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run package:ci
+
+      # Same guard as release.yml, moved earlier: a stale .vscodeignore once produced a
+      # 77 MB bundle. Catching it on the PR is cheaper than catching it mid-publish.
+      - name: Guard bundle size
+        run: |
+          size=$(stat -c%s agentville-*.vsix)
+          echo "vsix size: $size bytes"
+          test "$size" -lt 2000000 || { echo "::error::.vsix too large — check .vscodeignore"; exit 1; }
+
+      # Lets a reviewer install the exact build a PR produces without cloning it.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: agentville-vsix
+          path: '*.vsix'
+          if-no-files-found: error
