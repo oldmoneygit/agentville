@@ -2,7 +2,7 @@
   "name": "agentville",
   "displayName": "AgentVille",
   "description": "See every Claude Code and Antigravity agent running on your machine — sessions, subagents, models and live status, in one place.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "soumatheusgomes",
   "author": {
     "name": "Matheus Gomes",
